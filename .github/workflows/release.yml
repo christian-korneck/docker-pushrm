@@ -1,0 +1,136 @@
+name: Release
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  pre:
+   name: pre
+   runs-on: ubuntu-latest
+   steps:
+     - name: pre1
+       run: |
+         env
+         exit 0
+       
+  cr_release:
+    name: create_release
+    needs: [pre] #don't create a release too early
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # token provided by Actions, no need to set it
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+    - name: Output Release URL File
+      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+    - name: Save Release URL File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_url
+        path: ./release_url.txt
+        
+  build:
+    needs: [pre, cr_release]
+    strategy:
+      matrix:
+        os: [linux, darwin, windows]
+        arch: [amd64, 386, arm64, arm]
+        exclude:
+          - os: windows
+            arch: arm64
+          - os: windows
+            arch: arm
+          - os: darwin
+            arch: arm
+          - os: darwin
+            arch: arm64
+          - os: darwin
+            arch: 386
+        include:
+          - os: windows
+            file_extension: '.exe'
+          - os: linux
+            file_extension: ''
+          - os: darwin
+            file_extension: ''
+    name: Build
+    runs-on: ubuntu-latest
+    env: 
+      GOOS: ${{ matrix.os }}
+      GOARCH: ${{ matrix.arch }}
+    steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+        CGO_ENABLED: 0
+      run: |
+        go get -v -t -d .
+
+    - name: Build
+      run: go build -v -ldflags="-s -w" .
+
+    - name: compress with upx
+      run: sudo apt-get -y update && sudo apt-get -y install upx && upx ./docker-pushrm${{ matrix.file_extension }}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: docker-pushrm_${{ matrix.os }}_${{ matrix.arch }}${{ matrix.file_extension }}
+        path: ./docker-pushrm${{ matrix.file_extension }}
+
+    - name: Load Release URL File from release job
+      uses: actions/download-artifact@v1
+      with:
+          name: release_url
+    - name: Get Release File Name & Upload URL
+      id: get_release_info
+      run: |
+        value=`cat release_url/release_url.txt`
+        echo ::set-output name=upload_url::$value
+
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.get_release_info.outputs.upload_url }} # references get_release_info step above
+        asset_name: docker-pushrm_${{ matrix.os }}_${{ matrix.arch }}${{ matrix.file_extension }}
+        asset_path: ./docker-pushrm${{ matrix.file_extension }}
+        asset_content_type: application/octet-stream
+  
+  cleanup:
+    needs: [build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: call webhook to delete artifacts
+      env:
+        FOR_WEBHOOKS_SECRET: ${{ secrets.FOR_WEBHOOKS_SECRET }}
+      run: |
+        echo "::add-mask::$FOR_WEBHOOKS_SECRET"
+        curl --verbose --fail --show-error --location --request POST "https://api.github.com/repos/$GITHUB_REPOSITORY/dispatches" --header "Authorization: token $FOR_WEBHOOKS_SECRET" --header 'Content-Type: application/json' --header 'Accept: application/vnd.github.everest-preview+json' --data-raw "{ \"event_type\": \"delete_all_artifacts\", \"client_payload\": {\"parent_runid\": \"$GITHUB_RUN_ID\", \"parent_repo\": \"$GITHUB_REPOSITORY\"} }"
+
+
+      
+      
