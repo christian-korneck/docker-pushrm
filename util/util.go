@@ -89,8 +89,6 @@ func GetDockerCreds(authident string, authidentIsFuzzy bool) (dockerUser string,
 
 	var candidates []string
 	if authidentIsFuzzy == true {
-		//candidates := []string{authident, ("https://" + authident), ("https://" + authident + "/"), ("http://" + authident), ("http://" + authident + "/")}
-		//candidates := []string{"https://demo.goharbor.io"}
 		candidates = []string{authident, ("https://" + authident), ("https://" + authident + "/"), ("http://" + authident), ("http://" + authident + "/")}
 	} else {
 		candidates = []string{authident}
@@ -110,16 +108,6 @@ func GetDockerCreds(authident string, authidentIsFuzzy bool) (dockerUser string,
 		}
 
 	}
-
-	// ------
-
-	// dockerUser, dockerPasswd, err := QueryDockerCreds(authident)
-	// if err != nil {
-	// 	log.Debug(err)
-	// 	return "", "", fmt.Errorf(err.Error())
-	// }
-
-	// ------
 
 	return "", "", fmt.Errorf("no Docker credentials found for this server/provider. Run 'docker login' first. ")
 
