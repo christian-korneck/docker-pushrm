@@ -70,7 +70,7 @@ jobs:
     steps:
 
     - name: Set up Go 1.13
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v2
       with:
         go-version: 1.13
       id: go
@@ -87,7 +87,7 @@ jobs:
         go get -v -t -d .
 
     - name: Build
-      run: go build -v -ldflags="-s -w" .
+      run: go build -v -a -tags netgo -ldflags='-s -w -extldflags "-static"' .
 
     - name: compress with upx
       run: sudo apt-get -y update && sudo apt-get -y install upx && upx ./docker-pushrm${{ matrix.file_extension }}
