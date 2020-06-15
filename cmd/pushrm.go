@@ -47,7 +47,7 @@ var pushrmCmd = &cobra.Command{
 	Short:   "push README file from current working directory to container registry (Dockerhub, quay, harbor2)",
 	Long: `help for docker pushrm
 	
-	docker pushrm [IMAGE] [flags]
+	docker pushrm NAME[:TAG] [flags]
 	
 	pushes the README.md file from the current working
 	directory to the container registry (Dockerhub, quay, harbor2)
@@ -124,6 +124,14 @@ var pushrmCmd = &cobra.Command{
 	The README file needs to be in the current working directory from which
 	docker pushrm is being called.
 
+
+	Optional [:TAG] argument
+	========================
+
+	The [:TAG] argument is optional and has no effect for the currently
+	supported providers (which only support a README per repo, not per
+	tag). It is in place in case that additional providers get added in
+	the future that support READMEs on the tag level.
 
 
 `,
