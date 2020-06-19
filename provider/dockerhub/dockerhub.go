@@ -161,7 +161,7 @@ func PatchDescription(jwt string, readme string, namespacename string, reponame 
 			msg = msg + ". Server responded: \"" + dat["detail"].(string) + "\""
 		}
 		if res.StatusCode == 403 {
-			msg = msg + ". Try \"docker logout\" and \"docker login\". Also, if you have 2FA auth enabled in Dockerhub you'll need to disable it for this tool to work. (This is an unfortunate Dockerhub limitation, see docs for more infos.)"
+			msg = msg + ". Try \"docker logout\" and \"docker login\". You cannot use a personal access token to log in and must use username and password. If you have 2FA auth enabled in Dockerhub you'll need to disable it for this tool to work. (These are unfortunate Dockerhub limitations, see docs for more infos.)"
 
 		}
 		return fmt.Errorf(msg)

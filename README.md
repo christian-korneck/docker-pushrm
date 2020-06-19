@@ -181,13 +181,16 @@ On Mac/Linux make it executable and readable for all users: `chmod a+rx <path>/d
 
 ## Limitations
 
-### conflict with Dockerhub 2FA auth
+### Conflict with Dockerhub 2FA auth
 
 Pushing READMEs to Dockerhub doesn't work if you have 2FA auth (two-factor authentication) enabled for your Dockerhub account. This is an unfortunate Dockerhub API limitation.
 
 There are indications (in issues and forum posts) that a new API for Dockerhub might be coming up sooner or later that might fill this gap. Fingers crossed. 🤞
     
-    
-    
+### Conflict with Dockerhub personal access token
+
+Pushing READMEs to Dockerhub doesn't work if you are using personal access tokens. You need to login using username and password. This is an unfortunate Dockerhub API limitation.
+
+
 ----
 All trademarks, logos and website designs belong to their respective owners.
