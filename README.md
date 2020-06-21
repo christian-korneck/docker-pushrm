@@ -31,7 +31,7 @@ $ ls
 Dockerfile	README.md
 $ docker login
 Username: my-user
-Passwort: ********
+Password: ********
 Login Succeeded
 $ docker build -t my-user/hello-world .
 $ docker push my-user/hello-world
@@ -154,7 +154,7 @@ Or alternatively you can also set it up manually. Here's an example:
 		"https://index.docker.io/v1/": {
 			"auth": "xxx"
 		},
-        "https://demo.harbor.io": {
+        "https://demo.goharbor.io": {
 			"auth": "xxx"
 		}
 
