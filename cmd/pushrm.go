@@ -46,9 +46,9 @@ var pushrmCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Short:   "push README file from current working directory to container registry (Dockerhub, quay, harbor2)",
 	Long: `help for docker pushrm
-	
+
 	docker pushrm NAME[:TAG] [flags]
-	
+
 	pushes the README.md file from the current working
 	directory to the container registry (Dockerhub, quay, harbor2)
 	where it appears as repo description.
@@ -99,16 +99,16 @@ var pushrmCmd = &cobra.Command{
 	----
 	- get an api key (bearer token) from the quay webinterface
 
-	  - option 1: env var APIKEY__<SERVERNAME>_<DOMAIN>=<apikey> 
+	  - option 1: env var APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>
 		(example for quay.io: 'export APIKEY__QUAY_IO=myapikey')
-		
-	  - option 2: in the Docker config file (default: "$HOME/.docker/config.json") 
-		add the json key 'plugins.docker-pushrm.apikey_<servername>' with the 
+
+	  - option 2: in the Docker config file (default: "$HOME/.docker/config.json")
+		add the json key 'plugins.docker-pushrm.apikey_<servername>' with the
 		apikey as string value (example for quay.io: key name
 		'plugins.docker-pushrm.apikey_quay.io')
-	
+
 	Env var takes precedence.
-	
+
 
 	harbor
 	------
@@ -123,7 +123,7 @@ var pushrmCmd = &cobra.Command{
 
 	'README-containers.md' takes precedence. This allows to set up a
 	different README file for the container registry then for the git repo.
-	
+
 	The README file needs to be in the current working directory from which
 	docker pushrm is being called.
 
@@ -141,12 +141,6 @@ var pushrmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		log.Debug("subcommand \"pushrm\" called")
-		log.Debug("Using config file: ", viper.ConfigFileUsed())
-
-		if viper.ConfigFileUsed() == "" {
-			log.Error("Docker config file not found. Run \"docker login\" first to create it. ")
-			os.Exit(1)
-		}
 
 		//fmt.Println(os.Getenv("DOCKER_CLI_PLUGIN_ORIGINAL_CLI_COMMAND"))
 
@@ -239,18 +233,30 @@ var pushrmCmd = &cobra.Command{
 		}
 
 		var dockerUser string
+		dockerUser = os.Getenv("DOCKER_USERNAME")
 		var dockerPasswd string
+		dockerPasswd = os.Getenv("DOCKER_PASSWORD")
 		var err error
-		// a provider can request to handle auth itself with authident __NONE__
-		if authident != "__NONE__" {
-			dockerUser, dockerPasswd, err = util.GetDockerCreds(authident, authidentIsFuzzy)
-			if err != nil {
-				log.Error(err)
+
+		if dockerUser == "" || dockerPasswd == "" {
+			log.Debug("Using config file: ", viper.ConfigFileUsed())
+
+			if viper.ConfigFileUsed() == "" {
+				log.Error("Docker config file not found. Run \"docker login\" first to create it. ")
 				os.Exit(1)
 			}
-		} else {
-			dockerUser = ""
-			dockerPasswd = ""
+
+			// a provider can request to handle auth itself with authident __NONE__
+			if authident != "__NONE__" {
+				dockerUser, dockerPasswd, err = util.GetDockerCreds(authident, authidentIsFuzzy)
+				if err != nil {
+					log.Error(err)
+					os.Exit(1)
+				}
+			} else {
+				dockerUser = ""
+				dockerPasswd = ""
+			}
 		}
 
 		//log.Debug("Using Docker creds: ", dockerUser, " ", dockerPasswd)

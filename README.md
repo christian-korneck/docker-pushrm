@@ -72,6 +72,8 @@ Now you should be able to run `docker pushrm --help`.
 docker login
 ```
 
+Set the `DOCKER_USERNAME` and `DOCKER_PASSWORD` environment variables.
+
 ### Log in to Harbor v2 registry
 
 ```
