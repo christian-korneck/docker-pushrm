@@ -86,7 +86,23 @@ var pushrmCmd = &cobra.Command{
 	For some providers an API key needs to be specified
 	via env var or Docker config file.
 
+	Alternatively credentials can be set as environment
+	variables. Environment variables take precedence over
+	the Docker credentials store.
 
+	Environment variables can be specified with or without
+	a server name. The variant without a server name takes
+	precedence:
+
+	 - DOCKER_USER and DOCKER_PASS
+	 - DOCKER_USER__<SERVER>_<DOMAIN> and DOCKER_PASS__<SERVER>_<DOMAIN>
+	   (example for server 'docker.io': DOCKER_USER__DOCKER_IO=my-user
+	   and DOCKER_PASS__DOCKER_IO=my-password)
+
+	The provider 'quay' needs an additional env var for the API key
+	in form of APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>.
+
+	
 	Dockerhub
 	---------
 	run 'docker login'
@@ -233,12 +249,29 @@ var pushrmCmd = &cobra.Command{
 		}
 
 		var dockerUser string
-		dockerUser = os.Getenv("DOCKER_USERNAME")
 		var dockerPasswd string
-		dockerPasswd = os.Getenv("DOCKER_PASSWORD")
 		var err error
 
+		// generic env var (no servername specified) takes precedence
+		dockerUser = os.Getenv("DOCKER_USER")
+		dockerPasswd = os.Getenv("DOCKER_PASS")
+		if dockerUser != "" && dockerPasswd != "" {
+			log.Debug("using credentials for user " + dockerUser + " from generic env var")
+		}
+
+		// env var with servername is next
 		if dockerUser == "" || dockerPasswd == "" {
+			suffix := strings.ToUpper(strings.Replace(servername, ".", "_", -1))
+			dockerUser = os.Getenv("DOCKER_USER__" + suffix)
+			dockerPasswd = os.Getenv("DOCKER_PASS__" + suffix)
+			if dockerUser != "" && dockerPasswd != "" {
+				log.Debug("using credentials for user " + dockerUser + " from env var for suffix " + suffix)
+			}
+		}
+
+		// if credentials are not found in env vars, look in the Docker credentials store
+		if dockerUser == "" || dockerPasswd == "" {
+			log.Debug("no credentials found in env vars. Trying Docker credentials store")
 			log.Debug("Using config file: ", viper.ConfigFileUsed())
 
 			if viper.ConfigFileUsed() == "" {

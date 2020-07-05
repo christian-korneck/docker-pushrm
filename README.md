@@ -115,6 +115,26 @@ export APIKEY__QUAY_IO=my-api-key
 docker pushrm quay.io/my-user/my-repo
 ```
 
+## Log in with environment variables (for CI)
+
+Alternatively credentials can be set as environment variables. Environment variables take precedence over the Docker credentials store. Environment variables can be specified with or without a server name. The variant without a server name takes precedence.
+
+This is intended for running `docker-pushrm` as a standalone tool in a CI environment (no full Docker installation needed).
+
+- `DOCKER_USER` and `DOCKER_PASS`
+- `DOCKER_USER__<SERVER>_<DOMAIN>` and `DOCKER_PASS__<SERVER>_<DOMAIN>`
+	(example for server `docker.io`: `DOCKER_USER__DOCKER_IO=my-user` and `DOCKER_PASS__DOCKER_IO=my-password`)
+
+The provider 'quay' needs an additional env var for the API key in form of `APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>`.
+
+Example:
+
+```
+DOCKER_USER=my-user DOCKER_PASS=mypass docker-pushrm my-user/my-repo
+```
+
+
+
 #### configure Quay API key in Docker config file
 
 In the Docker config file (default: `$HOME/.docker/config.json`) add a json key `plugins.docker-pushrm.apikey_<servername>` with the api key as string value.
@@ -144,7 +164,7 @@ You can still use `docker-pushrm` as standalone executable.
 
 The only obstacle is that you need to provide it credentials in the Docker style.
 
-The easiest way for that is to set up a minimal Docker config file with the registry server logins that you need.
+The easiest way for that is to set up a minimal Docker config file with the registry server logins that you need. (Alternatively credentials can be passed [in environment variables](#log-in-with-environment-variables-for-ci) )
 
 You can either create this config file on a computer with Docker installed (by running `docker login` and then copying the `$HOME/.docker/config.json` file).
 
