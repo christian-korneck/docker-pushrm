@@ -20,6 +20,24 @@ jobs:
     needs: [pre] #don't create a release too early
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code for changelog creation
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 #otherwise only one commit is fetched
+    - name: Create Changelog
+      id: create_changelog
+      run: |
+        git fetch --tags
+        git tag #for debug
+        git log --oneline #for debug
+        previousTag=$(git tag --sort=-v:refname | head -2 | tail -1)
+        echo previous tag: $previousTag #for debug
+        changelog=$(git log --oneline --pretty="%s" $previousTag..HEAD)
+        echo changelog1: "$changelog" #for debug
+        changelog=$(echo "$changelog" | sed 's/^/- /')
+        echo changelog2: "$changelog" #for debug
+        echo changes since $previousTag: > ./changelog.md
+        echo "$changelog" >> ./changelog.md
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -30,6 +48,7 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
+        body_path: ./changelog.md
     - name: Output Release URL File
       run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
     - name: Save Release URL File for publish
