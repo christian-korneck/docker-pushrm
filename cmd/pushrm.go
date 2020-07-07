@@ -26,6 +26,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/christian-korneck/docker-pushrm/provider/dockerhub"
 	"github.com/christian-korneck/docker-pushrm/provider/harbor2"
@@ -39,6 +40,7 @@ import (
 
 var providername string
 var rfile string
+var shortdesc string
 
 // pushrmCmd represents the pushrm command
 var pushrmCmd = &cobra.Command{
@@ -163,6 +165,14 @@ var pushrmCmd = &cobra.Command{
 		log.Debug("subcommand \"pushrm\" called")
 
 		//fmt.Println(os.Getenv("DOCKER_CLI_PLUGIN_ORIGINAL_CLI_COMMAND"))
+
+		// lowest common ground: 100 runes (not bytes) on Dockerhub
+		// this check is intentially global (not per provider) to
+		// make cmd calls portable between providers without surprises
+		if utf8.RuneCountInString(shortdesc) > 99 {
+			log.Error("Short description is too long (max 100 characters)")
+			os.Exit(1)
+		}
 
 		// our only positional argument: <servername>/<namespacename>/<reponame>:<tag> (servername + tag are optional)
 		targetinfo := args[0]
@@ -303,7 +313,7 @@ var pushrmCmd = &cobra.Command{
 		//log.Debug("Using Docker creds: ", dockerUser, " ", dockerPasswd)
 		log.Debug("Using Docker creds: ", dockerUser, " ", "********")
 
-		err = prov.Pushrm(servername, namespacename, reponame, tagname, dockerUser, dockerPasswd, readme)
+		err = prov.Pushrm(servername, namespacename, reponame, tagname, dockerUser, dockerPasswd, readme, shortdesc)
 		if err != nil {
 			log.Error(err)
 			os.Exit(1)
@@ -344,6 +354,7 @@ Global Flags:
 	// pushrmCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	pushrmCmd.Flags().StringVarP(&providername, "provider", "p", "dockerhub", "repo type: dockerhub, harbor2, quay")
 	pushrmCmd.Flags().StringVarP(&rfile, "file", "f", "", "README file (defaults: \"./README-containers.md\", \"./README.md\")")
+	pushrmCmd.Flags().StringVarP(&shortdesc, "short", "s", "", "short description (optional)")
 	pushrmCmd.Parent().SetUsageTemplate(usageTemplate)
 	pushrmCmd.Parent().SetHelpTemplate(helpTemplate)
 }

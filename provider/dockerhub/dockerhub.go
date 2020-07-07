@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -38,14 +37,15 @@ type Dockerhub struct {
 }
 
 //Pushrm is the main provider function
-func (f Dockerhub) Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string) error {
+func (f Dockerhub) Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string, shortdesc string) error {
+
 	log.Debug("Dockerhub.Pushrm called")
 	jwt, err := GetJwt(dockerUser, dockerPasswd)
 	if err != nil {
 		log.Debug(err)
 		return fmt.Errorf("error trying to get a JWT token from Dockerhub for the stored Docker login. Try \"docker logout\" and \"docker login\". Also, if you have 2FA auth enabled in Dockerhub you'll need to disable it for this tool to work. (This is an unfortunate Dockerhub limitation, see docs for more infos). ")
 	}
-	err = PatchDescription(jwt, readme, namespacename, reponame)
+	err = PatchDescription(jwt, readme, namespacename, reponame, shortdesc)
 	if err != nil {
 		log.Debug(err)
 		return fmt.Errorf("error pushing readme to repo server. See error message below. Run with \"--debug\" for more details. \n\n" + err.Error())
@@ -112,16 +112,20 @@ func GetJwt(dockerUser string, dockerPasswd string) (jwt string, error error) {
 }
 
 //PatchDescription - api call to update the repo description
-func PatchDescription(jwt string, readme string, namespacename string, reponame string) (error error) {
+func PatchDescription(jwt string, readme string, namespacename string, reponame string, shortdesc string) (error error) {
 
 	// trailing slash is crucial
 	apiurl := "https://hub.docker.com/v2/repositories/" + namespacename + "/" + reponame + "/"
 	method := "PATCH"
 
-	readmeurlenc := url.QueryEscape(readme)
+	bodydata := make(map[string]string)
+	bodydata["full_description"] = readme
+	if shortdesc != "" {
+		bodydata["description"] = shortdesc
+	}
+	jsonbody, _ := json.Marshal(bodydata)
 
-	payload := strings.NewReader("full_description=" + readmeurlenc)
-
+	payload := strings.NewReader(string(jsonbody))
 	client := &http.Client{}
 	req, err := http.NewRequest(method, apiurl, payload)
 	if err != nil {
@@ -130,7 +134,7 @@ func PatchDescription(jwt string, readme string, namespacename string, reponame 
 	}
 
 	req.Header.Add("Authorization", "JWT "+jwt)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Type", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -170,6 +174,10 @@ func PatchDescription(jwt string, readme string, namespacename string, reponame 
 
 	if dat["full_description"] != readme {
 		return fmt.Errorf("error pushing README, pushed readme to repo server but validation failed")
+	}
+
+	if shortdesc != "" && dat["description"] != shortdesc {
+		return fmt.Errorf("error setting Short Description, pushed to repo server but validation failed")
 	}
 
 	log.Debug("content validation successfull, readme successfully pushed to repo server")

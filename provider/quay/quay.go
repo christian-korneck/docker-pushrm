@@ -38,7 +38,12 @@ type Quay struct {
 }
 
 //Pushrm is the main provider function
-func (f Quay) Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string) error {
+func (f Quay) Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string, shortdesc string) error {
+
+	if shortdesc != "" {
+		log.Warn("Short description not supported for provider \"quay\". Ignoring.")
+	}
+
 	log.Debug("Quay.Pushrm called")
 
 	apikey, err := util.GetApikey(servername)

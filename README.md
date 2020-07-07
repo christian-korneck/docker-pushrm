@@ -51,9 +51,9 @@ And also for Quay/OpenShift cloud and self-hosted registry servers:
 docker pushrm --provider quay quay.io/my-user/hello-world
 ```
 
-In case that you want different content to appear in the README on the container registry than on the git repo (for github/gitlab), you can create a dedicated `README-containers.md`, which takes precedence.
+For Dockerhub it's also possible to set the repo's short description with `-s "some description"`.
 
-It's also possible to specify a path to a README file with `--file <path>`.
+In case that you want different content to appear in the README on the container registry than on the git repo (for github/gitlab), you can create a dedicated `README-containers.md`, which takes precedence. It's also possible to specify a path to a README file with `--file <path>`.
 
 ## Installation
 

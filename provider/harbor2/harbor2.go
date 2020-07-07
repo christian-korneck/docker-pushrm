@@ -38,7 +38,12 @@ type Harbor2 struct {
 }
 
 //Pushrm is the main provider function
-func (f Harbor2) Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string) error {
+func (f Harbor2) Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string, shortdesc string) error {
+
+	if shortdesc != "" {
+		log.Warn("Short description not supported for provider \"harbor2\". Ignoring.")
+	}
+
 	log.Debug("Harbor2.Pushrm called")
 
 	err := PatchDescription(dockerUser, dockerPasswd, readme, servername, namespacename, reponame)

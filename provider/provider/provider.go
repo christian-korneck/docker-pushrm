@@ -27,5 +27,5 @@ type Provider interface {
 	//GetAuthident - returns the key name under which the provider credentials are stored in Docker's credentials store. Special values: __SERVERNAME__ = use servername, __NONE__ = retrieving credentials will be handled by the provider
 	GetAuthident() (authident string)
 	//Pushrm function - main provider function, performs the api  call to update the repo description
-	Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string) error
+	Pushrm(servername string, namespacename string, reponame string, tagname string, dockerUser string, dockerPasswd string, readme string, shortdesc string) error
 }
