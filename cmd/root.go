@@ -75,7 +75,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.docker/config.json)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default \"$HOME/.docker/config.json\")")
 	rootCmd.PersistentFlags().BoolVarP(&isDebug, "debug", "D", false, "Enable debug mode")
 
 	// these are the docker cli global flags
