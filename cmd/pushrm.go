@@ -306,6 +306,24 @@ var pushrmCmd = &cobra.Command{
 }
 
 func init() {
+
+	const usageTemplate = `
+Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}
+  `
+
+	const helpTemplate = `
+{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}
+{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}
+  `
+
 	rootCmd.AddCommand(pushrmCmd)
 	// Here you will define your flags and configuration settings.
 
@@ -317,5 +335,6 @@ func init() {
 	// is called directly, e.g.:
 	// pushrmCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	pushrmCmd.Flags().StringVarP(&providername, "provider", "p", "dockerhub", "repo type: dockerhub, harbor2, quay")
-
+	pushrmCmd.Parent().SetUsageTemplate(usageTemplate)
+	pushrmCmd.Parent().SetHelpTemplate(helpTemplate)
 }
