@@ -53,7 +53,7 @@ func ReadFile(path string) (filecontent string, error error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Debug(err)
-		return "", fmt.Errorf("found README file but could not read it: " + path)
+		return "", fmt.Errorf("could not read README file: " + path)
 	}
 	text := string(content)
 	return text, nil

@@ -38,6 +38,7 @@ import (
 )
 
 var providername string
+var rfile string
 
 // pushrmCmd represents the pushrm command
 var pushrmCmd = &cobra.Command{
@@ -143,6 +144,9 @@ var pushrmCmd = &cobra.Command{
 	The README file needs to be in the current working directory from which
 	docker pushrm is being called.
 
+	It's also possible to specify a path to a README file with 
+	'--file <path>' ('-f <path>').
+
 
 	Optional [:TAG] argument
 	========================
@@ -177,15 +181,19 @@ var pushrmCmd = &cobra.Command{
 		}
 		log.Debug("Using target: ", targetinfo)
 
-		foundfile, erro := util.FindReadmeFile()
-		if erro != nil {
-			log.Error(erro)
-			os.Exit(1)
+		var erro error
+
+		if rfile == "" {
+			rfile, erro = util.FindReadmeFile()
+			if erro != nil {
+				log.Error(erro)
+				os.Exit(1)
+			}
 		}
 
-		log.Debug("using README file: " + foundfile)
+		log.Debug("using README file: " + rfile)
 
-		readme, erro := util.ReadFile(foundfile)
+		readme, erro := util.ReadFile(rfile)
 		if erro != nil {
 			log.Error(erro)
 			os.Exit(1)
@@ -335,6 +343,7 @@ Global Flags:
 	// is called directly, e.g.:
 	// pushrmCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	pushrmCmd.Flags().StringVarP(&providername, "provider", "p", "dockerhub", "repo type: dockerhub, harbor2, quay")
+	pushrmCmd.Flags().StringVarP(&rfile, "file", "f", "", "README file (defaults: \"./README-containers.md\", \"./README.md\")")
 	pushrmCmd.Parent().SetUsageTemplate(usageTemplate)
 	pushrmCmd.Parent().SetHelpTemplate(helpTemplate)
 }
