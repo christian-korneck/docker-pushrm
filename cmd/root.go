@@ -89,25 +89,20 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dockerGlobalTlscert, "tlscert", "", "(not supported)")
 	rootCmd.PersistentFlags().StringVar(&dockerGlobalTlskey, "tlskey", "", "(not supported)")
 
+	// hide unsupported flags so that they don't show up with `docker-pushrm pushrm --help`
+	rootCmd.PersistentFlags().MarkHidden("context")
+	rootCmd.PersistentFlags().MarkHidden("host")
+	rootCmd.PersistentFlags().MarkHidden("log-level")
+	rootCmd.PersistentFlags().MarkHidden("tls")
+	rootCmd.PersistentFlags().MarkHidden("tlsverify")
+	rootCmd.PersistentFlags().MarkHidden("tlscacert")
+	rootCmd.PersistentFlags().MarkHidden("tlscert")
+	rootCmd.PersistentFlags().MarkHidden("tlskey")
+
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	// hide unsupported flags so that they don't show up with `docker-pushrm pushrm --help`
-	origHelpFunc := rootCmd.HelpFunc()
-	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if cmd.Name() == "" || (cmd.Parent() != nil && cmd.Parent().Name() == "") {
-			cmd.Flags().MarkHidden("context")
-			cmd.Flags().MarkHidden("host")
-			cmd.Flags().MarkHidden("log-level")
-			cmd.Flags().MarkHidden("tls")
-			cmd.Flags().MarkHidden("tlsverify")
-			cmd.Flags().MarkHidden("tlscacert")
-			cmd.Flags().MarkHidden("tlscert")
-			cmd.Flags().MarkHidden("tlskey")
-		}
-		origHelpFunc(cmd, args)
-	})
 }
 
 // initConfig reads in config file and ENV variables if set.
