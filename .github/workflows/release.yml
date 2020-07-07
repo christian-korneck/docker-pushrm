@@ -46,7 +46,7 @@ jobs:
       with:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
-        draft: false
+        draft: true #we'll undraft at the end if the build step was successfull (= all assets uploaded to the release)
         prerelease: false
         body_path: ./changelog.md
     - name: Output Release URL File
@@ -56,6 +56,13 @@ jobs:
       with:
         name: release_url
         path: ./release_url.txt
+    - name: Output Release ID File
+      run: echo "${{ steps.create_release.outputs.id }}" > release_id.txt
+    - name: Save Release ID File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_id
+        path: ./release_id.txt
         
   build:
     needs: [pre, cr_release]
@@ -137,6 +144,28 @@ jobs:
         asset_name: docker-pushrm_${{ matrix.os }}_${{ matrix.arch }}${{ matrix.file_extension }}
         asset_path: ./docker-pushrm${{ matrix.file_extension }}
         asset_content_type: application/octet-stream
+  
+  undraft_release:
+    needs: [build] #only undraft the release if assets were uploaded to it
+    runs-on: ubuntu-latest
+    steps:
+    - name: Load Release ID File from release job
+      uses: actions/download-artifact@v1
+      with:
+          name: release_id
+    - name: Get Release ID
+      id: get_release_id_info
+      run: |
+        value=`cat release_id/release_id.txt`
+        echo ::set-output name=release_id::$value
+    - name: Undraft release
+      id: undraft_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_ID: ${{ steps.get_release_id_info.outputs.release_id }} # references other step
+      run: |
+        curl --verbose --fail --show-error --location --request PATCH "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --header "Authorization: token $GITHUB_TOKEN" --header 'Content-Type: application/json' --header 'Accept: application/vnd.github.everest-preview+json' --data-raw '{"draft": false}'
+
   
   cleanup:
     needs: [build]
