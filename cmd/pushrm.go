@@ -169,7 +169,7 @@ var pushrmCmd = &cobra.Command{
 		// lowest common ground: 100 runes (not bytes) on Dockerhub
 		// this check is intentially global (not per provider) to
 		// make cmd calls portable between providers without surprises
-		if utf8.RuneCountInString(shortdesc) > 99 {
+		if utf8.RuneCountInString(shortdesc) > 100 {
 			log.Error("Short description is too long (max 100 characters)")
 			os.Exit(1)
 		}
