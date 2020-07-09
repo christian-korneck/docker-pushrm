@@ -66,6 +66,10 @@ In case that you want different content to appear in the README on the container
 
 Now you should be able to run `docker pushrm --help`.
 
+## Running `docker-pushrm` as a container
+
+There's also a Docker/OCI [container image](https://hub.docker.com/r/chko/docker-pushrm) of this tool. See [separate docs](README-containers.md) for how to use it. This is mainly intended for use in CI workflows.
+
 ## How to log in to container registries
 
 ### Log in to Dockerhub registry

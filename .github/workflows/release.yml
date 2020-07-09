@@ -145,8 +145,68 @@ jobs:
         asset_path: ./docker-pushrm${{ matrix.file_extension }}
         asset_content_type: application/octet-stream
   
+  build_containers:
+    #needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Split tag string into semantic version parts
+      id: semver
+      run: |
+        git fetch --tags
+        git tag #for debug
+        export vcur=$(git tag --sort=-v:refname | head -1 | sed 's/v//1')
+        export vmajor=$(echo $vcur | cut -d. -f1)
+        export vminor=$(echo $vcur | cut -d. -f2)
+        export vpatch=$(echo $vcur | cut -d. -f3)
+        echo ::set-output name=vcur::$vcur
+        echo ::set-output name=vmajor::$vmajor
+        echo ::set-output name=vminor::$vminor
+        echo ::set-output name=vpatch::$vpatch
+        echo version: $vcur
+        echo version major: $vmajor
+        echo version minor: $vminor
+        echo version patch: $vpatch
+    - name: Prepare docker-buildx
+      run: |
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        docker buildx create --name mybuilder
+        docker buildx ls #for debug
+        docker buildx inspect --bootstrap
+        docker buildx use mybuilder
+    - name: Docker login
+      env:
+        DOCKER_USER: chko
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      run: |
+        docker login -u "$DOCKER_USER" -p  "$DOCKER_PASS"
+    - name: Build an Push container images with docker-buildx
+      env:
+        vcur: ${{ steps.semver.outputs.vcur }}
+        vmajor: ${{ steps.semver.outputs.vmajor }}
+        vminor: ${{ steps.semver.outputs.vminor }}
+        vpatch: ${{ steps.semver.outputs.vpatch }}
+      run: |
+        docker buildx inspect #for debug
+        echo version: $ver - major: $vmajor - minor: $vminor - patch: $vpatch #for debug
+        destrepo=chko/docker-pushrm
+        docker buildx build -t "$destrepo:latest" -t "$destrepo:$vcur" -t "$destrepo:$vmajor" --platform linux/amd64,linux/386,linux/arm64,linux/arm/v7,linux/arm/v6 --push .
+        docker buildx stop
+    - name: Update container repo README
+      env:
+        #exact env var names for docker-pushrm
+        DOCKER_USER: chko
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      run: |
+        # download latest docker-pushrm release from github
+        # (because we keep the release that this workflow creates drafted until the end of the workflow run the version we're downloading is NOT the one we're currently releasing)
+        export FILENAME=docker-pushrm_linux_amd64 && export DESTDIR=. && DOWNLOAD_URL=$(curl --silent --fail --show-error https://api.github.com/repos/christian-korneck/docker-pushrm/releases/latest | jq -r ".assets | map(select(.name == \"$FILENAME\"))[0].browser_download_url") && curl --silent --fail --show-error -L $DOWNLOAD_URL -o "$DESTDIR/docker-pushrm" && chmod +rx "$DESTDIR/docker-pushrm"
+        # this automatically uses README-containers.md
+        ./docker-pushrm --short "Docker Push Readme - Update the docs of your container repo on Dockerhub, Quay, Harbor from a file" chko/docker-pushrm
+
   undraft_release:
-    needs: [build] #only undraft the release if assets were uploaded to it
+    needs: [build, build_containers] #only undraft the release if assets were uploaded to it
     runs-on: ubuntu-latest
     steps:
     - name: Load Release ID File from release job
@@ -165,10 +225,10 @@ jobs:
         RELEASE_ID: ${{ steps.get_release_id_info.outputs.release_id }} # references other step
       run: |
         curl --verbose --fail --show-error --location --request PATCH "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --header "Authorization: token $GITHUB_TOKEN" --header 'Content-Type: application/json' --header 'Accept: application/vnd.github.everest-preview+json' --data-raw '{"draft": false}'
-
+  
   
   cleanup:
-    needs: [build]
+    needs: [build] #currently this can start before build_containers is finished
     if: always()
     runs-on: ubuntu-latest
     steps:
