@@ -181,7 +181,7 @@ jobs:
         DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
       run: |
         docker login -u "$DOCKER_USER" -p  "$DOCKER_PASS"
-    - name: Build an Push container images with docker-buildx
+    - name: Build and Push container images with docker-buildx
       env:
         vcur: ${{ steps.semver.outputs.vcur }}
         vmajor: ${{ steps.semver.outputs.vmajor }}
