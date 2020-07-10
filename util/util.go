@@ -63,6 +63,11 @@ func ReadFile(path string) (filecontent string, error error) {
 func GetApikey(servername string) (apikey string, error error) {
 	log.Debug("util.GetApikey called")
 
+	genericEnvval := os.Getenv("DOCKER_APIKEY")
+	if genericEnvval != "" {
+		return genericEnvval, nil
+	}
+
 	envkey := "APIKEY__" + strings.ToUpper(strings.Replace(servername, ".", "_", -1))
 	querykey := "plugins.docker-pushrm.apikey_" + servername
 
@@ -77,7 +82,7 @@ func GetApikey(servername string) (apikey string, error error) {
 			apikey = cfgval
 			return apikey, nil
 		} else {
-			return "", fmt.Errorf("could not find api key for server " + servername + ". Either specify env var " + envkey + " or " + querykey + " in the local Docker config file. ")
+			return "", fmt.Errorf("could not find api key for server " + servername + ". Either specify env var DOCKER_APIKEY or env var " + envkey + " or " + querykey + " in the local Docker config file. ")
 		}
 
 	}

@@ -118,7 +118,8 @@ var pushrmCmd = &cobra.Command{
 	----
 	- get an api key (bearer token) from the quay webinterface
 
-	  - option 1: env var APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>
+	  - option 1: env var DOCKER_APIKEY=<apikey>
+	    or env var APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>
 		(example for quay.io: 'export APIKEY__QUAY_IO=myapikey')
 
 	  - option 2: in the Docker config file (default: "$HOME/.docker/config.json")

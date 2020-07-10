@@ -111,7 +111,7 @@ First, log into the Quay webinterface and create an API key:
 Then, make the API key available to `docker-pushrm`. There are two options for that: Either set an environment variable (recommended for CI) or add it to the Docker config file (recommended for Desktop use). (If both are present, the env var takes precedence).
 
 #### env var for Quay API key
-set an environment variable `APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>`
+set an environment variable `DOCKER_APIKEY=<apikey>` or `APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>`
 
 example for servername `quay.io`:
 ```
