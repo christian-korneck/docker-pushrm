@@ -289,7 +289,7 @@ var pushrmCmd = &cobra.Command{
 		}
 
 		// if credentials are not found in env vars, look in the Docker credentials store
-		if dockerUser == "" || dockerPasswd == "" {
+		if (dockerUser == "" || dockerPasswd == "") && authident != "__NONE__" {
 			log.Debug("no credentials found in env vars. Trying Docker credentials store")
 			log.Debug("Using config file: ", viper.ConfigFileUsed())
 
