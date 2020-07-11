@@ -70,6 +70,10 @@ Now you should be able to run `docker pushrm --help`.
 
 There's also a Docker/OCI [container image](https://hub.docker.com/r/chko/docker-pushrm) of this tool. See [separate docs](README-containers.md) for how to use it. This is mainly intended for use in CI workflows.
 
+## Use with github actions
+
+This tool is also available as a github action [here](https://github.com/marketplace/actions/update-container-description-action).
+
 ## How to log in to container registries
 
 ### Log in to Dockerhub registry
