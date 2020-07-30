@@ -59,10 +59,12 @@ In case that you want different content to appear in the README on the container
 
 - make sure Docker or Docker Desktop is installed
 - Download `docker-pushrm` for your platform from the [release page](https://github.com/christian-korneck/docker-pushrm/releases/latest).
+  - e.g. for linux-x86: `curl -LO "https://github.com/christian-korneck/docker-pushrm/releases/latest/download/docker-pushrm_linux_amd64"`
+- on Mac/Linux make it executable: `chmod +x docker-pushrm_<PLATFORM>`
 - copy it to:
   - Windows: `c:\Users\<your-username>\.docker\cli-plugins\docker-pushrm.exe`
-  - Mac + Linux: `$HOME/.docker/cli-plugins/docker-pushrm`
-- on Mac/Linux make it executable: `chmod +x $HOME/.docker/cli-plugins/docker-pushrm`
+  - Mac: `$HOME/.docker/cli-plugins/docker-pushrm`
+  - Linux: `/usr/local/lib/docker/cli-plugins/docker-pushrm`
 
 Now you should be able to run `docker pushrm --help`.
 
