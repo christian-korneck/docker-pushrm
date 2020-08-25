@@ -126,14 +126,15 @@ func QueryDockerCreds(authident string) (dockerUser string, dockerPasswd string,
 	if viper.GetString("auths."+authident+".auth") != "" {
 
 		credsb64 := viper.GetString("auths." + authident + ".auth")
-		credsclearb, err := base64.URLEncoding.DecodeString(credsb64)
+		credsclearb, err := base64.StdEncoding.DecodeString(credsb64)
 		if err != nil {
 			log.Debug(err)
 			return "", "", fmt.Errorf("Error parsing auth info from the Docker config file. Check your local Docker config. ")
 		}
 		credsclear := string(credsclearb)
-		dockerUser = strings.Split(credsclear, ":")[0]
-		dockerPasswd = strings.Split(credsclear, ":")[1]
+		credssplit := strings.Split(credsclear, ":")
+		dockerUser = credssplit[0]
+		dockerPasswd = credsclear[len(dockerUser)+1:]
 
 	} else {
 		if viper.GetString("credsStore") != "" {
