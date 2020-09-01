@@ -46,7 +46,7 @@ var shortdesc string
 var pushrmCmd = &cobra.Command{
 	Use:     " NAME[:TAG]",
 	Aliases: []string{"pushrm"},
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.MaximumNArgs(1),
 	Short:   "push README file from current working directory to container registry (Dockerhub, quay, harbor2)",
 	Long: `help for docker pushrm
 
@@ -105,7 +105,7 @@ var pushrmCmd = &cobra.Command{
 	The provider 'quay' needs an additional env var for the API key
 	in form of APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>.
 
-	
+
 	Dockerhub
 	---------
 	run 'docker login'
@@ -147,7 +147,7 @@ var pushrmCmd = &cobra.Command{
 	The README file needs to be in the current working directory from which
 	docker pushrm is being called.
 
-	It's also possible to specify a path to a README file with 
+	It's also possible to specify a path to a README file with
 	'--file <path>' ('-f <path>').
 
 
@@ -162,6 +162,9 @@ var pushrmCmd = &cobra.Command{
 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		pushrmProvider := viper.GetString("provider")
+		pushrmFile := viper.GetString("file")
+		pushrmShortDesc := viper.GetString("short")
 
 		log.Debug("subcommand \"pushrm\" called")
 
@@ -170,13 +173,18 @@ var pushrmCmd = &cobra.Command{
 		// lowest common ground: 100 runes (not bytes) on Dockerhub
 		// this check is intentially global (not per provider) to
 		// make cmd calls portable between providers without surprises
-		if utf8.RuneCountInString(shortdesc) > 100 {
+		if utf8.RuneCountInString(pushrmShortDesc) > 100 {
 			log.Error("Short description is too long (max 100 characters)")
 			os.Exit(1)
 		}
 
 		// our only positional argument: <servername>/<namespacename>/<reponame>:<tag> (servername + tag are optional)
-		targetinfo := args[0]
+		targetinfo := os.Getenv("PUSHRM_TARGET")
+		if len(args) > 0 {
+			if target := args[0]; target != "" {
+				targetinfo = target
+			}
+		}
 		// fail if namespacename is missing
 		if len(strings.Split(targetinfo, "/")) < 2 {
 			log.Error("Invalid [IMAGE] argument - missing namespace. Example: docker.io/mynamespace/myrepo:latest")
@@ -194,17 +202,17 @@ var pushrmCmd = &cobra.Command{
 
 		var erro error
 
-		if rfile == "" {
-			rfile, erro = util.FindReadmeFile()
+		if pushrmFile == "" {
+			pushrmFile, erro = util.FindReadmeFile()
 			if erro != nil {
 				log.Error(erro)
 				os.Exit(1)
 			}
 		}
 
-		log.Debug("using README file: " + rfile)
+		log.Debug("using README file: " + pushrmFile)
 
-		readme, erro := util.ReadFile(rfile)
+		readme, erro := util.ReadFile(pushrmFile)
 		if erro != nil {
 			log.Error(erro)
 			os.Exit(1)
@@ -220,16 +228,16 @@ var pushrmCmd = &cobra.Command{
 		reponame := strings.Split(strings.Split(targetinfo, "/")[2], ":")[0]
 		tagname := strings.Split(strings.Split(targetinfo, "/")[2], ":")[1]
 		if servername == "docker.io" {
-			providername = "dockerhub"
+			pushrmProvider = "dockerhub"
 		}
 		if servername == "quay.io" {
-			providername = "quay"
+			pushrmProvider = "quay"
 		}
 		log.Debug("server: ", servername)
 		log.Debug("namespace: ", namespacename)
 		log.Debug("repo: ", reponame)
 		log.Debug("tag: ", tagname)
-		log.Debug("repo provider: ", providername)
+		log.Debug("repo provider: ", pushrmProvider)
 
 		for _, e := range []string{namespacename, reponame, tagname, servername} {
 			// yes, dots are allowed in all these fields
@@ -239,14 +247,14 @@ var pushrmCmd = &cobra.Command{
 			}
 		}
 
-		if providername == "dockerhub" && servername != "docker.io" {
-			log.Error("servername ", servername, " is not valid for provider ", providername, " (try \"docker.io\")")
+		if pushrmProvider == "dockerhub" && servername != "docker.io" {
+			log.Error("servername ", servername, " is not valid for provider ", pushrmProvider, " (try \"docker.io\")")
 			os.Exit(1)
 		}
 
 		var prov provider.Provider
 
-		switch providername {
+		switch pushrmProvider {
 		case "dockerhub":
 			prov = dockerhub.Dockerhub{}
 		case "quay":
@@ -254,7 +262,7 @@ var pushrmCmd = &cobra.Command{
 		case "harbor2":
 			prov = harbor2.Harbor2{}
 		default:
-			log.Error("unsupported repo provider: ", providername+". See \"--help\" for supported providers. ")
+			log.Error("unsupported repo provider: ", pushrmProvider+". See \"--help\" for supported providers. ")
 			os.Exit(1)
 		}
 
@@ -314,7 +322,7 @@ var pushrmCmd = &cobra.Command{
 		//log.Debug("Using Docker creds: ", dockerUser, " ", dockerPasswd)
 		log.Debug("Using Docker creds: ", dockerUser, " ", "********")
 
-		err = prov.Pushrm(servername, namespacename, reponame, tagname, dockerUser, dockerPasswd, readme, shortdesc)
+		err = prov.Pushrm(servername, namespacename, reponame, tagname, dockerUser, dockerPasswd, readme, pushrmShortDesc)
 		if err != nil {
 			log.Error(err)
 			os.Exit(1)
@@ -358,4 +366,8 @@ Global Flags:
 	pushrmCmd.Flags().StringVarP(&shortdesc, "short", "s", "", "short description (optional)")
 	pushrmCmd.Parent().SetUsageTemplate(usageTemplate)
 	pushrmCmd.Parent().SetHelpTemplate(helpTemplate)
+
+	viper.BindPFlag("provider", pushrmCmd.Flags().Lookup("provider"))
+	viper.BindPFlag("file", pushrmCmd.Flags().Lookup("file"))
+	viper.BindPFlag("short", pushrmCmd.Flags().Lookup("short"))
 }

@@ -136,6 +136,7 @@ func initConfig() {
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix("pushrm")
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
