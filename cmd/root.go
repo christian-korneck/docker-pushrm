@@ -99,6 +99,9 @@ func init() {
 	rootCmd.PersistentFlags().MarkHidden("tlscert")
 	rootCmd.PersistentFlags().MarkHidden("tlskey")
 
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
@@ -107,7 +110,13 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if isDebug {
+	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix("pushrm")
+
+	pushrmConfig := viper.GetString("config")
+	pushrmDebug := viper.GetBool("debug")
+
+	if pushrmDebug {
 		log.SetLevel(log.DebugLevel)
 	} else {
 		log.SetLevel(log.WarnLevel)
@@ -116,9 +125,9 @@ func initConfig() {
 
 	log.Debug("root cmd init config")
 
-	if cfgFile != "" {
+	if pushrmConfig != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		viper.SetConfigFile(pushrmConfig)
 	} else {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -134,9 +143,6 @@ func initConfig() {
 
 		viper.SetConfigName("config") //filename without .json extension
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-	viper.SetEnvPrefix("pushrm")
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
