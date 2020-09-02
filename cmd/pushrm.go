@@ -161,6 +161,19 @@ var pushrmCmd = &cobra.Command{
 	the future that support READMEs on the tag level.
 
 
+	Supported environment variables
+	===============================
+	
+	DOCKER_USER, DOCKER_PASS, DOCKER_APIKEY, APIKEY__<SERVER>_<DOMAIN>,
+	PUSHRM_PROVIDER, PUSHRM_SHORT, PUSHRM_FILE, PUSHRM_DEBUG, PUSHRM_CONFIG,
+	PUSHRM_TARGET
+
+	Commandline parameters take precedence over environment variables.
+	Login environment variables take precedence over the local credentials
+	store.
+
+
+
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := run(args); err != nil {
