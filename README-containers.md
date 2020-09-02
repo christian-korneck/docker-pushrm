@@ -38,6 +38,18 @@ Let's dissect this a bit:
 - we set `--debug` to get additional log output (optional)
 - we set the short description for the Dockerhub repo with `--short <string>` (optional)
 
+**Alternatively all params can also get set with environment variables:**
+
+```
+$ docker run --rm -t \
+-v $(pwd):/myvol \
+-e DOCKER_USER='my-user' -e DOCKER_PASS='my-pass' \
+-e PUSHRM_PROVIDER=dockerhub -e PUSHRM_FILE=/myvol/README.md \
+-e PUSHRM_SHORT='my short description' \
+-e PUSHRM_TARGET=docker.io/my-user/my-repo -e PUSHRM_DEBUG=1 \
+chko/docker-pushrm:1
+```
+
 #### Push a README file to a Harbor v2 registry server
 
 Use the `--provider harbor2` flag:
@@ -55,8 +67,9 @@ chko/docker-pushrm:1 --file /myvol/README.md \
 
 #### Push a README file to Quay.io or a Quay registry server
 
+
 - use the `--provider quay` flag
-- use env var `APIKEY__<SERVER>_<DOMAIN>` for apikey credentials
+- use env var `APIKEY__<SERVER>_<DOMAIN>` or `DOCKER_APIKEY` for apikey credentials
 
 ```
 $ ls
@@ -68,6 +81,27 @@ $ docker run --rm -t \
 chko/docker-pushrm:1 --file /myvol/README.md \ 
 --provider quay --debug quay.io/my-user/my-repo
 ```
+
+### env vars
+
+| env var                     | example value                  | description
+| --------------------------- | ------------------------------ | ----------------------------------------
+| `DOCKER_USER`               | `my-user`                      | login username
+| `DOCKER_PASS`               | `my-password`                  | login password
+| `DOCKER_APIKEY`             | `my-quay-api-key`              | quay api key
+| `APIKEY__<SERVER>_<DOMAIN>` | `my-quay-api-key`              | quay api key (alternative)
+| `PUSHRM_PROVIDER`           | `dockerhub`, `quay`, `harbor2` | repo provider type
+| `PUSHRM_SHORT`              | `my short description`         | set/update repo short description
+| `PUSHRM_FILE`               | `/myvol/README.md`             | path to the README file
+| `PUSHRM_DEBUG`              | `1`                            | enable verbose output
+| `PUSHRM_CONFIG`             | `/myvol/.docker/config.json`   | Docker config file (for credentials)
+| `PUSHRM_TARGET`             | `docker.io/my-user/my-repo`    | container repo ref
+
+Presedence:
+- Params specified with flags take precedence over env vars.
+- Login env vars take precedence over credentials from a Docker config file
+
+
 
 
 

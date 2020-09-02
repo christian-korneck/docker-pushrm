@@ -23,6 +23,7 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"errors"
 	"os"
 	"regexp"
 	"strings"
@@ -46,7 +47,7 @@ var shortdesc string
 var pushrmCmd = &cobra.Command{
 	Use:     " NAME[:TAG]",
 	Aliases: []string{"pushrm"},
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.MaximumNArgs(1),
 	Short:   "push README file from current working directory to container registry (Dockerhub, quay, harbor2)",
 	Long: `help for docker pushrm
 
@@ -105,7 +106,7 @@ var pushrmCmd = &cobra.Command{
 	The provider 'quay' needs an additional env var for the API key
 	in form of APIKEY__<SERVERNAME>_<DOMAIN>=<apikey>.
 
-	
+
 	Dockerhub
 	---------
 	run 'docker login'
@@ -147,7 +148,7 @@ var pushrmCmd = &cobra.Command{
 	The README file needs to be in the current working directory from which
 	docker pushrm is being called.
 
-	It's also possible to specify a path to a README file with 
+	It's also possible to specify a path to a README file with
 	'--file <path>' ('-f <path>').
 
 
@@ -160,168 +161,205 @@ var pushrmCmd = &cobra.Command{
 	the future that support READMEs on the tag level.
 
 
+	Supported environment variables
+	===============================
+	
+	DOCKER_USER, DOCKER_PASS, DOCKER_APIKEY, APIKEY__<SERVER>_<DOMAIN>,
+	PUSHRM_PROVIDER, PUSHRM_SHORT, PUSHRM_FILE, PUSHRM_DEBUG, PUSHRM_CONFIG,
+	PUSHRM_TARGET
+
+	Commandline parameters take precedence over environment variables.
+	Login environment variables take precedence over the local credentials
+	store.
+
+
+
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-
-		log.Debug("subcommand \"pushrm\" called")
-
-		//fmt.Println(os.Getenv("DOCKER_CLI_PLUGIN_ORIGINAL_CLI_COMMAND"))
-
-		// lowest common ground: 100 runes (not bytes) on Dockerhub
-		// this check is intentially global (not per provider) to
-		// make cmd calls portable between providers without surprises
-		if utf8.RuneCountInString(shortdesc) > 100 {
-			log.Error("Short description is too long (max 100 characters)")
-			os.Exit(1)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := run(args); err != nil {
+			return err
 		}
+		return nil
+	},
+}
 
-		// our only positional argument: <servername>/<namespacename>/<reponame>:<tag> (servername + tag are optional)
-		targetinfo := args[0]
-		// fail if namespacename is missing
-		if len(strings.Split(targetinfo, "/")) < 2 {
-			log.Error("Invalid [IMAGE] argument - missing namespace. Example: docker.io/mynamespace/myrepo:latest")
-			os.Exit(1)
+func run(args []string) error {
+	pushrmProvider := viper.GetString("provider")
+	pushrmFile := viper.GetString("file")
+	pushrmShortDesc := viper.GetString("short")
+
+	log.Debug("subcommand \"pushrm\" called")
+
+	//fmt.Println(os.Getenv("DOCKER_CLI_PLUGIN_ORIGINAL_CLI_COMMAND"))
+
+	// lowest common ground: 100 runes (not bytes) on Dockerhub
+	// this check is intentially global (not per provider) to
+	// make cmd calls portable between providers without surprises
+	if utf8.RuneCountInString(pushrmShortDesc) > 100 {
+		log.Error("Short description is too long (max 100 characters)")
+		os.Exit(1)
+	}
+
+	// our only positional argument: <servername>/<namespacename>/<reponame>:<tag> (servername + tag are optional)
+	targetinfo := os.Getenv("PUSHRM_TARGET")
+	if len(args) > 0 {
+		if target := args[0]; target != "" {
+			targetinfo = target
 		}
-		// fill up default servername, if missing
-		if len(strings.Split(targetinfo, "/")) < 3 {
-			targetinfo = "docker.io/" + targetinfo
-		}
-		// fill up default tagname, if missing
-		if strings.Contains(targetinfo, ":") != true {
-			targetinfo = targetinfo + ":latest"
-		}
-		log.Debug("Using target: ", targetinfo)
+	}
 
-		var erro error
+	if targetinfo == "" {
+		return (errors.New("Missing [IMAGE] argument. Example: docker.io/mynamespace/myrepo:latest"))
+		//log.Error("Missing [IMAGE] argument. Example: docker.io/mynamespace/myrepo:latest")
+		//os.Exit(1)
+	}
 
-		if rfile == "" {
-			rfile, erro = util.FindReadmeFile()
-			if erro != nil {
-				log.Error(erro)
-				os.Exit(1)
-			}
-		}
+	// fail if namespacename is missing
+	if len(strings.Split(targetinfo, "/")) < 2 {
+		log.Error("Invalid [IMAGE] argument - missing namespace. Example: docker.io/mynamespace/myrepo:latest")
+		os.Exit(1)
+	}
+	// fill up default servername, if missing
+	if len(strings.Split(targetinfo, "/")) < 3 {
+		targetinfo = "docker.io/" + targetinfo
+	}
+	// fill up default tagname, if missing
+	if strings.Contains(targetinfo, ":") != true {
+		targetinfo = targetinfo + ":latest"
+	}
+	log.Debug("Using target: ", targetinfo)
 
-		log.Debug("using README file: " + rfile)
+	var erro error
 
-		readme, erro := util.ReadFile(rfile)
+	if pushrmFile == "" {
+		pushrmFile, erro = util.FindReadmeFile()
 		if erro != nil {
 			log.Error(erro)
 			os.Exit(1)
 		}
+	}
 
-		if (len(strings.Split(targetinfo, "/")) != 3) || (len(strings.Split(strings.Split(targetinfo, "/")[2], ":")) != 2) {
-			log.Error("Invalid [IMAGE] argument - too many separators. Example: docker.io/mynamespace/myrepo:latest")
+	log.Debug("using README file: " + pushrmFile)
+
+	readme, erro := util.ReadFile(pushrmFile)
+	if erro != nil {
+		log.Error(erro)
+		os.Exit(1)
+	}
+
+	if (len(strings.Split(targetinfo, "/")) != 3) || (len(strings.Split(strings.Split(targetinfo, "/")[2], ":")) != 2) {
+		log.Error("Invalid [IMAGE] argument - too many separators. Example: docker.io/mynamespace/myrepo:latest")
+		os.Exit(1)
+	}
+
+	servername := strings.ToLower(strings.Split(targetinfo, "/")[0])
+	namespacename := strings.Split(targetinfo, "/")[1]
+	reponame := strings.Split(strings.Split(targetinfo, "/")[2], ":")[0]
+	tagname := strings.Split(strings.Split(targetinfo, "/")[2], ":")[1]
+	if servername == "docker.io" {
+		pushrmProvider = "dockerhub"
+	}
+	if servername == "quay.io" {
+		pushrmProvider = "quay"
+	}
+	log.Debug("server: ", servername)
+	log.Debug("namespace: ", namespacename)
+	log.Debug("repo: ", reponame)
+	log.Debug("tag: ", tagname)
+	log.Debug("repo provider: ", pushrmProvider)
+
+	for _, e := range []string{namespacename, reponame, tagname, servername} {
+		// yes, dots are allowed in all these fields
+		if regexp.MustCompile(`^[0-9a-zA-Z\-_.]+$`).MatchString(e) == false {
+			log.Error("Invalid [IMAGE argument] - bad characters or empty value. Example: docker.io/mynamespace/myrepo:latest")
 			os.Exit(1)
 		}
+	}
 
-		servername := strings.ToLower(strings.Split(targetinfo, "/")[0])
-		namespacename := strings.Split(targetinfo, "/")[1]
-		reponame := strings.Split(strings.Split(targetinfo, "/")[2], ":")[0]
-		tagname := strings.Split(strings.Split(targetinfo, "/")[2], ":")[1]
-		if servername == "docker.io" {
-			providername = "dockerhub"
-		}
-		if servername == "quay.io" {
-			providername = "quay"
-		}
-		log.Debug("server: ", servername)
-		log.Debug("namespace: ", namespacename)
-		log.Debug("repo: ", reponame)
-		log.Debug("tag: ", tagname)
-		log.Debug("repo provider: ", providername)
+	if pushrmProvider == "dockerhub" && servername != "docker.io" {
+		log.Error("servername ", servername, " is not valid for provider ", pushrmProvider, " (try \"docker.io\")")
+		os.Exit(1)
+	}
 
-		for _, e := range []string{namespacename, reponame, tagname, servername} {
-			// yes, dots are allowed in all these fields
-			if regexp.MustCompile(`^[0-9a-zA-Z\-_.]+$`).MatchString(e) == false {
-				log.Error("Invalid [IMAGE argument] - bad characters or empty value. Example: docker.io/mynamespace/myrepo:latest")
-				os.Exit(1)
-			}
-		}
+	var prov provider.Provider
 
-		if providername == "dockerhub" && servername != "docker.io" {
-			log.Error("servername ", servername, " is not valid for provider ", providername, " (try \"docker.io\")")
-			os.Exit(1)
-		}
+	switch pushrmProvider {
+	case "dockerhub":
+		prov = dockerhub.Dockerhub{}
+	case "quay":
+		prov = quay.Quay{}
+	case "harbor2":
+		prov = harbor2.Harbor2{}
+	default:
+		log.Error("unsupported repo provider: ", pushrmProvider+". See \"--help\" for supported providers. ")
+		os.Exit(1)
+	}
 
-		var prov provider.Provider
+	authident := prov.GetAuthident()
+	var authidentIsFuzzy bool
+	authidentIsFuzzy = false
 
-		switch providername {
-		case "dockerhub":
-			prov = dockerhub.Dockerhub{}
-		case "quay":
-			prov = quay.Quay{}
-		case "harbor2":
-			prov = harbor2.Harbor2{}
-		default:
-			log.Error("unsupported repo provider: ", providername+". See \"--help\" for supported providers. ")
-			os.Exit(1)
-		}
+	if authident == "__SERVERNAME__" {
+		authident = servername
+		authidentIsFuzzy = true
+	}
 
-		authident := prov.GetAuthident()
-		var authidentIsFuzzy bool
-		authidentIsFuzzy = false
+	var dockerUser string
+	var dockerPasswd string
+	var err error
 
-		if authident == "__SERVERNAME__" {
-			authident = servername
-			authidentIsFuzzy = true
-		}
+	// generic env var (no servername specified) takes precedence
+	dockerUser = os.Getenv("DOCKER_USER")
+	dockerPasswd = os.Getenv("DOCKER_PASS")
+	if dockerUser != "" && dockerPasswd != "" {
+		log.Debug("using credentials for user " + dockerUser + " from generic env var")
+	}
 
-		var dockerUser string
-		var dockerPasswd string
-		var err error
-
-		// generic env var (no servername specified) takes precedence
-		dockerUser = os.Getenv("DOCKER_USER")
-		dockerPasswd = os.Getenv("DOCKER_PASS")
+	// env var with servername is next
+	if dockerUser == "" || dockerPasswd == "" {
+		suffix := strings.ToUpper(strings.Replace(servername, ".", "_", -1))
+		dockerUser = os.Getenv("DOCKER_USER__" + suffix)
+		dockerPasswd = os.Getenv("DOCKER_PASS__" + suffix)
 		if dockerUser != "" && dockerPasswd != "" {
-			log.Debug("using credentials for user " + dockerUser + " from generic env var")
+			log.Debug("using credentials for user " + dockerUser + " from env var for suffix " + suffix)
 		}
+	}
 
-		// env var with servername is next
-		if dockerUser == "" || dockerPasswd == "" {
-			suffix := strings.ToUpper(strings.Replace(servername, ".", "_", -1))
-			dockerUser = os.Getenv("DOCKER_USER__" + suffix)
-			dockerPasswd = os.Getenv("DOCKER_PASS__" + suffix)
-			if dockerUser != "" && dockerPasswd != "" {
-				log.Debug("using credentials for user " + dockerUser + " from env var for suffix " + suffix)
-			}
-		}
+	// if credentials are not found in env vars, look in the Docker credentials store
+	if (dockerUser == "" || dockerPasswd == "") && authident != "__NONE__" {
+		log.Debug("no credentials found in env vars. Trying Docker credentials store")
+		log.Debug("Using config file: ", viper.ConfigFileUsed())
 
-		// if credentials are not found in env vars, look in the Docker credentials store
-		if (dockerUser == "" || dockerPasswd == "") && authident != "__NONE__" {
-			log.Debug("no credentials found in env vars. Trying Docker credentials store")
-			log.Debug("Using config file: ", viper.ConfigFileUsed())
-
-			if viper.ConfigFileUsed() == "" {
-				log.Error("Docker config file not found. Run \"docker login\" first to create it. ")
-				os.Exit(1)
-			}
-
-			// a provider can request to handle auth itself with authident __NONE__
-			if authident != "__NONE__" {
-				dockerUser, dockerPasswd, err = util.GetDockerCreds(authident, authidentIsFuzzy)
-				if err != nil {
-					log.Error(err)
-					os.Exit(1)
-				}
-			} else {
-				dockerUser = ""
-				dockerPasswd = ""
-			}
-		}
-
-		//log.Debug("Using Docker creds: ", dockerUser, " ", dockerPasswd)
-		log.Debug("Using Docker creds: ", dockerUser, " ", "********")
-
-		err = prov.Pushrm(servername, namespacename, reponame, tagname, dockerUser, dockerPasswd, readme, shortdesc)
-		if err != nil {
-			log.Error(err)
+		if viper.ConfigFileUsed() == "" {
+			log.Error("Docker config file not found. Run \"docker login\" first to create it. ")
 			os.Exit(1)
 		}
 
-		// ---------
-	},
+		// a provider can request to handle auth itself with authident __NONE__
+		if authident != "__NONE__" {
+			dockerUser, dockerPasswd, err = util.GetDockerCreds(authident, authidentIsFuzzy)
+			if err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
+		} else {
+			dockerUser = ""
+			dockerPasswd = ""
+		}
+	}
+
+	//log.Debug("Using Docker creds: ", dockerUser, " ", dockerPasswd)
+	log.Debug("Using Docker creds: ", dockerUser, " ", "********")
+
+	err = prov.Pushrm(servername, namespacename, reponame, tagname, dockerUser, dockerPasswd, readme, pushrmShortDesc)
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
+
+	return nil
+
+	// ---------
 }
 
 func init() {
@@ -358,4 +396,8 @@ Global Flags:
 	pushrmCmd.Flags().StringVarP(&shortdesc, "short", "s", "", "short description (optional)")
 	pushrmCmd.Parent().SetUsageTemplate(usageTemplate)
 	pushrmCmd.Parent().SetHelpTemplate(helpTemplate)
+
+	viper.BindPFlag("provider", pushrmCmd.Flags().Lookup("provider"))
+	viper.BindPFlag("file", pushrmCmd.Flags().Lookup("file"))
+	viper.BindPFlag("short", pushrmCmd.Flags().Lookup("short"))
 }

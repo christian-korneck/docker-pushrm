@@ -207,6 +207,16 @@ To install the plugin for all users of a system copy it to the following path (i
 
 On Mac/Linux make it executable and readable for all users: `chmod a+rx <path>/docker-pushrm`
 
+## Using env vars instead of cmdline params
+
+All cmdline parameters can also be set as env vars with prefix `PUSHRM_`.    
+    
+Cmdline parameters take precedence over env vars. (Except for login env vars, which take precedence over the local credentials store).    
+    
+This is mainly intended for running this tool in a container in [12fa](https://12factor.net/config) style.    
+    
+A list of all supported env vars is [here](README-containers.md#env-vars).
+
 ## Limitations
 
 ### Conflict with Dockerhub personal access tokens and 2FA auth
