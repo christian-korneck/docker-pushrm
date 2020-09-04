@@ -225,6 +225,12 @@ Pushing READMEs to Dockerhub currently only works with username/password and **n
 
 There are indications (in issues and forum posts) that a new API for Dockerhub might be coming up sooner or later that might fill this gap. Fingers crossed. 🤞
 
+### Problem with Harbor2 OpenID connect logins
+
+This tool currently doesn't work for Harbor2 users that that authenticate through a 3rd party [OpenID Connect (OIDC) provider](https://goharbor.io/docs/1.10/administration/configure-authentication/oidc-auth/) like auth0, Keycloak, okta, dex, etc).
+(Local users and LDAP users are not affected and should work). This limitation is [under investigation](https://github.com/christian-korneck/docker-pushrm/issues/10), contributions are welcome!
+
+
 
 ----
 All trademarks, logos and website designs belong to their respective owners.
