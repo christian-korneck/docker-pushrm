@@ -38,6 +38,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+// BytesToString converts
+func BytesToString(b []byte) string {
+	return string(b[:])
+}
+
 // StringInSlice checks if a string exists in a slice
 func StringInSlice(checkval string, list []string) bool {
 	for _, b := range list {

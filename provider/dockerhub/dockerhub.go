@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/christian-korneck/docker-pushrm/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -67,7 +68,14 @@ func GetJwt(dockerUser string, dockerPasswd string) (jwt string, error error) {
 	url := "https://hub.docker.com/v2/users/login/"
 	method := "POST"
 
-	payload := strings.NewReader("{\n    \"username\": \"" + dockerUser + "\",\n    \"password\": \"" + dockerPasswd + "\"\n}")
+	payloadJSON, err := json.Marshal(map[string]string{"username": dockerUser, "password": dockerPasswd})
+	if err != nil {
+		log.Debug(err)
+		return "", fmt.Errorf("error retrieving Dockerhub jwt token, error marshal payload")
+	}
+
+	payloadStr := util.BytesToString(payloadJSON)
+	payload := strings.NewReader(payloadStr)
 
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, payload)
