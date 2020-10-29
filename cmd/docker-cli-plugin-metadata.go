@@ -40,7 +40,7 @@ var dockerCliPluginMetadataCmd = &cobra.Command{
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "    ")
 		// specs: https://docs.docker.com/engine/extend/cli_plugins/#the-docker-cli-plugin-metadata-subcommand
-		d := map[string]string{"SchemaVersion": "0.1.0", "Vendor": "Christian Korneck", "Version": "1.5.0", "ShortDescription": "Push Readme to container registry"}
+		d := map[string]string{"SchemaVersion": "0.1.0", "Vendor": "Christian Korneck", "Version": "1.5.1", "ShortDescription": "Push Readme to container registry"}
 		enc.Encode(d)
 	},
 }
