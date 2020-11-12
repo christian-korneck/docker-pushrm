@@ -95,10 +95,10 @@ jobs:
       GOARCH: ${{ matrix.arch }}
     steps:
 
-    - name: Set up Go 1.13
+    - name: Set up Go 1.15
       uses: actions/setup-go@v2
       with:
-        go-version: 1.13
+        go-version: 1.15
       id: go
 
     - name: Check out code into the Go module directory
