@@ -74,6 +74,31 @@ There's also a Docker/OCI [container image](https://hub.docker.com/r/chko/docker
 
 This tool is also available as a github action [here](https://github.com/marketplace/actions/update-container-description-action).
 
+## Use with GitLab CI/CD
+
+Here's an example for a `.gitlab-ci.yml` that uses the `docker-pushrm` container image. (`DOCKER_USER` and `DOCKER_PASS` need to be set as project or group variables):
+
+```
+stages:
+  - release
+
+pushrm:
+  stage: release
+  image:
+    name: chko/docker-pushrm
+    entrypoint: ["/bin/sh", "-c", "/docker-pushrm"]
+  variables:
+    DOCKER_USER: $DOCKER_USER
+    DOCKER_PASS: $DOCKER_PASS
+    PUSHRM_SHORT: My short description
+    PUSHRM_TARGET: docker.io/$DOCKER_USER/my-repo
+    PUSHRM_DEBUG: 1
+    PUSHRM_FILE: $CI_PROJECT_DIR/README.md
+  script: "/bin/true"
+```
+
+(Note: The above `entrypoint`/`script` setup is a workaround for a [GitLab limitation](https://gitlab.com/gitlab-org/gitlab-runner/-/issues/26501). For the same reason the `docker-pushrm` container images include [busybox](https://hub.docker.com/_/busybox)).
+
 ## How to log in to container registries
 
 ### Log in to Dockerhub registry
