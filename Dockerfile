@@ -4,7 +4,7 @@ COPY . .
 RUN apk add --no-cache ca-certificates && update-ca-certificates
 ENV CGO_ENABLED 0
 RUN go build -v -a -tags netgo -ldflags='-s -w -extldflags "-static"' .
-RUN apk add --no-cache upx && upx ./docker-pushrm
+#RUN apk add --no-cache upx && upx ./docker-pushrm
 
 FROM docker.io/library/busybox
 COPY --from=builder /go/src/github.com/christian-korneck/docker-pushrm/docker-pushrm /
