@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine AS builder
+FROM golang:1.16-alpine AS builder
 WORKDIR /go/src/github.com/christian-korneck/docker-pushrm
 COPY . .
 RUN apk add --no-cache ca-certificates && update-ca-certificates
