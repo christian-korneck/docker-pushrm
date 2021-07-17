@@ -91,7 +91,7 @@ jobs:
           - os: darwin
             file_extension: ''
           - os: darwin
-            ci_image: macos-11.0
+            ci_image: macos-latest
           - os: darwin
             no_upx: true
     name: Build
@@ -173,7 +173,7 @@ jobs:
   
   cr_darwin_universal_binary:
     needs: [build]
-    runs-on: macos-11.0
+    runs-on: macos-latest
     steps:
 
     - name: Check out code
