@@ -189,19 +189,25 @@ func QueryDockerCreds(authident string) (dockerUser string, dockerPasswd string,
 
 //FindReadmeFile trys to find a readme file in the cwd
 func FindReadmeFile() (foundfile string, error error) {
-	preferedfilename := "./README-containers.md" //prefer README-containers.md if it  exists
-	matches, err := filepath.Glob(preferedfilename)
-	if err != nil {
-		log.Debug(err)
-		return "", fmt.Errorf("error while searching for readme file")
+	preferedfilenames := []string{"./README-containers.md", "./README.md"} //prefer these filenames in this order
+
+	for _, preferedfilename := range preferedfilenames {
+		matches, err := filepath.Glob(preferedfilename)
+		if err != nil {
+			log.Debug(err)
+			return "", fmt.Errorf("error while searching for default readme file")
+		}
+		if len(matches) >= 1 {
+			foundfile = preferedfilename
+			break
+		}
 	}
-	if len(matches) >= 1 {
-		foundfile = preferedfilename
-	} else {
+
+	if foundfile == "" {
 		matches, err := filepath.Glob("./[R|r][E|e][A|a][D|d][M|m][E|e]*")
 		if err != nil {
 			log.Debug(err)
-			return "", fmt.Errorf("error while searching for readme file")
+			return "", fmt.Errorf("error while searching for alternate readme file")
 		}
 		if len(matches) < 1 {
 			return "", fmt.Errorf("README file not found in the current working directory. Create a file \"README-containers.md\" or \"README.md\" or \"cd\" into a directory that contains a README file. ")
