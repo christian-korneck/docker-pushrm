@@ -111,8 +111,7 @@ var pushrmCmd = &cobra.Command{
 	---------
 	run 'docker login'
 
-	(Note: Dockerhub login must be username/password. Personal access tokens / 2FA auth
-	is not supported. See docs for details.)
+	(use password or Personal Access Token (PAT) with 'admin' scope)
 
 
 	quay
