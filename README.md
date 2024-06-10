@@ -111,6 +111,11 @@ Both password and Personal Access Token (PAT) should work. When using a PAT, mak
 
 ### Log in to Harbor v2 registry
 
+In the Harbor webinterface, create a `Robot Account` for your project with (at least) the privilege `repository`: `update` [[screenshot](https://github.com/christian-korneck/docker-pushrm/issues/10#issuecomment-2159212629)] and use the displayed username and password.
+
+(Login with a regular Harbor user account instead is possible too, but [won't work](https://github.com/christian-korneck/docker-pushrm/issues/10) if the Harbor instance is using OIDC auth. Using a robot account is strongly recommended).
+
+
 ```
 docker login <servername>
 ```
@@ -246,12 +251,7 @@ A list of all supported env vars is [here](README-containers.md#env-vars).
 
 ## Limitations
 
-### Problem with Harbor2 OpenID connect logins
-
-This tool currently doesn't work for Harbor2 users that that authenticate through a 3rd party [OpenID Connect (OIDC) provider](https://goharbor.io/docs/1.10/administration/configure-authentication/oidc-auth/) like auth0, Keycloak, okta, dex, etc).
-(Local users and LDAP users are not affected and should work). This limitation is [under investigation](https://github.com/christian-korneck/docker-pushrm/issues/10), contributions are welcome!
-
-
+(currently none)
 
 ----
 All trademarks, logos and website designs belong to their respective owners.
